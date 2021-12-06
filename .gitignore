@@ -3,6 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# tf data cache
+data_cache
+
+# saved datastructure
+saved_data
+
 # C extensions
 *.so
 
