@@ -6,6 +6,9 @@ __pycache__/
 # tf data cache
 data_cache
 
+# jupyter cache
+tmp
+
 # saved datastructure
 saved_data
 
@@ -136,3 +139,4 @@ dmypy.json
 
 **/*.zip
 .idea
+.vscode
