@@ -8,6 +8,7 @@ data_cache
 
 # jupyter cache
 tmp
+tmp.ipynb
 
 # saved datastructure
 saved_data

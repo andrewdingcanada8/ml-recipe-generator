@@ -35,25 +35,27 @@ from preprocess import get_data
 #     return tf.exp((np.array(batch_loss).mean()))
 
 def train(model, inputs, epoch):
-  total_loss = 0
   prog = tf.keras.utils.Progbar(len(inputs))
-  for train_x, train_y in inputs: # train_x.shape = (128, 1, 28, 28)
+  total_loss = 0
+  for train_x, train_y in inputs:
+    # print(train_x.shape, train_y.shape)
     with tf.GradientTape() as tape:
-      pred = model.call(train_x)
-      loss = model.loss(pred, train_y)
+      preds = model.call(train_x)
+      loss = model.loss(train_y, preds)
     gradients = tape.gradient(loss, model.trainable_variables)
     model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     total_loss += loss
-    prog.add(1,[('epoch', epoch), ('loss', loss)])
+    prog.add(1,[('epoch', int(epoch)), ('loss', loss)])
   return total_loss
   
 def parseArguments():
   parser = argparse.ArgumentParser()
-  parser.add_argument("--embedding_dim", type=int, default=256)
-  parser.add_argument("--hidden_dim", type=int, default=1024)
+  parser.add_argument("--embedding_dim", type=int, default=16) #256
+  parser.add_argument("--hidden_dim", type=int, default=32) #1024
   parser.add_argument("--epochs", type=int, default=3)
   parser.add_argument("--batch_size", type=int, default=64)
   parser.add_argument("--learning_rate", type=float, default=1e-3)
+  parser.add_argument("--percent", type=float, default=1.0)
   args = parser.parse_args()
   return args
 
@@ -68,12 +70,14 @@ def main(args):
     EPOCHS = args.epochs
     BATCH_SZE = args.batch_size
     LEARNING_RATE = args.learning_rate
+    PERCENT = args.percent
     
     # import data from preprocessing
     inputs, tokenizer, vocab_sze = get_data(
       'data/saved_data/data_padded.pickle', 
       'data/saved_data/tokenizer.pickle',
       BATCH_SZE,
+      PERCENT
       )
     
     # STEPS_PER_EPOCH = #total // batch size
@@ -85,11 +89,9 @@ def main(args):
     
     losses = []
     for epoch in range(1, EPOCHS+1):
-      batch_inputs = inputs.take(1)
-      total_loss = train(model, batch_inputs, epoch)
+      total_loss = train(model, inputs, epoch)
       losses.append(total_loss)
-    # TODO: Visualize your rewards.
-    # visualize_data(losses)
+    
 
 
 if __name__ == '__main__':
