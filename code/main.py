@@ -87,7 +87,7 @@ def main(args):
     
     losses = []
     for epoch in range(1, EPOCHS+1):
-        total_loss = train(model, inputs)
+        total_loss = train(model, inputs, epoch)
         losses.append(total_loss)
     # TODO: Visualize your rewards.
     visualize_data(losses)
