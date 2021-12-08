@@ -36,21 +36,19 @@ from preprocess import get_data
 
 def train(model, inputs, epoch):
   total_loss = 0
-  print(f"Train Epoch: {epoch} \tLoss: {total_loss/len(train_dataset):.6f}")
   prog = tf.keras.utils.Progbar(len(inputs))
   for train_x, train_y in inputs: # train_x.shape = (128, 1, 28, 28)
     with tf.GradientTape() as tape:
       pred = model.call(train_x)
-      loss = model.loss(pred, train_x)
-    prog.add(1,[('epoch', epoch), ('loss', loss)])
-    total_loss += loss
+      loss = model.loss(pred, train_y)
     gradients = tape.gradient(loss, model.trainable_variables)
     model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    total_loss += loss
+    prog.add(1,[('epoch', epoch), ('loss', loss)])
   return total_loss
   
 def parseArguments():
   parser = argparse.ArgumentParser()
-  # parser.add_argument("--load_weights", action="store_true")
   parser.add_argument("--embedding_dim", type=int, default=256)
   parser.add_argument("--hidden_dim", type=int, default=1024)
   parser.add_argument("--epochs", type=int, default=3)
@@ -83,14 +81,15 @@ def main(args):
     VOCAB_SZE = vocab_sze
     
     # initialize model
-    model = LSTM(EMBEDDING_DIM, HIDDEN_DIM, VOCAB_SZE, LEARNING_RATE)
+    model = LSTM(EMBEDDING_DIM, HIDDEN_DIM, VOCAB_SZE, LEARNING_RATE, BATCH_SZE)
     
     losses = []
     for epoch in range(1, EPOCHS+1):
-        total_loss = train(model, inputs, epoch)
-        losses.append(total_loss)
+      batch_inputs = inputs.take(1)
+      total_loss = train(model, batch_inputs, epoch)
+      losses.append(total_loss)
     # TODO: Visualize your rewards.
-    visualize_data(losses)
+    # visualize_data(losses)
 
 
 if __name__ == '__main__':

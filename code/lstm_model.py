@@ -1,32 +1,31 @@
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Embedding, LSTM
+from tensorflow.keras.layers import Dense, Embedding
 from tensorflow.keras.initializers import GlorotNormal, RandomNormal
 
 
 class LSTM():
-  def __init__(self, embedding_dim, hidden_dim, vocab_sze, learning_rate):
+  def __init__(self, embedding_dim, hidden_dim, vocab_sze, learning_rate, batch_sze):
     self.optimizer = Adam(learning_rate=learning_rate)
-    self.sequential_layer = Sequential([
-      Embedding(
-        vocab_sze,
-        embedding_dim,
-        embeddings_initializer=RandomNormal() #verify randomnormal
-      ),
-      LSTM(
-        embedding_dim,
-        hidden_dim,
-        vocab_sze,
+    self.embedding_layer = Embedding(
+        input_dim=vocab_sze,
+        output_dim=embedding_dim,
+        embeddings_initializer=RandomNormal(), #verify randomnormal
+        batch_input_shape=[batch_sze,]
+      )
+    self.lstm_layer = tf.keras.layers.LSTM(
+        units=hidden_dim,
         return_sequences=True,
         stateful=True,
         recurrent_initializer=GlorotNormal()
-      ),
-      Dense(vocab_sze)
-    ])
+      )
+    self.dense_layer = Dense(vocab_sze)
   
   def call(self, inputs):
-    return self.sequential_layer(inputs)
+    embeddings = self.embedding_layer(inputs)
+    output = self.lstm_layer(embeddings)
+    return self.dense_layer(output)
   
   def loss(self, labels, logits):
     entropy = tf.keras.losses.sparse_categorical_crossentropy(
