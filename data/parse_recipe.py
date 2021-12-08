@@ -137,8 +137,6 @@ def parse_recipe(lines):
     try:
         current = _parse_mmf_header(it, current, recipe)
         current = _parse_title(it, current, recipe)
-        current = _parse_categories(it, current, recipe)
-        current = _parse_yield(it, current, recipe)
         current = _parse_ingredients(it, current, recipe)
         current = _parse_directions(it, current, recipe)
     except StopIteration:
@@ -288,7 +286,7 @@ def _parse_ingredients(it, current, recipe):
 # followed by a space
 # followed by 2 digits or spaces
 # followed by a space
-_ingredient_re = re.compile(r"^[\d\./ ]{7} [A-Za-z ]{2} ")
+_ingredient_re = re.compile(r"^[\d]")
 
 
 def _is_ingredient(line):
