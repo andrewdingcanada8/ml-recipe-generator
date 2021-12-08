@@ -160,7 +160,7 @@ def _is_empty(line):
 
 def _is_mmf_header(line):
     """Returns whether a line is a valid MMF header."""
-    return line.startswith("--------")
+    return line.startswith("--------") or line.startswith('MMMMM-----')
 
 
 def _is_mmf_footer(line):

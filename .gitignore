@@ -140,3 +140,5 @@ dmypy.json
 **/*.zip
 .idea
 .vscode
+
+data/database_unclean/*
