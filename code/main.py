@@ -34,18 +34,30 @@ from preprocess import get_data
 #         batch_loss.append(model.loss(probs, labels_batch))
 #     return tf.exp((np.array(batch_loss).mean()))
 
-
-    
+def train(model, inputs, epoch):
+  total_loss = 0
+  print(f"Train Epoch: {epoch} \tLoss: {total_loss/len(train_dataset):.6f}")
+  prog = tf.keras.utils.Progbar(len(inputs))
+  for train_x, train_y in inputs: # train_x.shape = (128, 1, 28, 28)
+    with tf.GradientTape() as tape:
+      pred = model.call(train_x)
+      loss = model.loss(pred, train_x)
+    prog.add(1,[('epoch', epoch), ('loss', loss)])
+    total_loss += loss
+    gradients = tape.gradient(loss, model.trainable_variables)
+    model.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+  return total_loss
+  
 def parseArguments():
-    parser = argparse.ArgumentParser()
-    # parser.add_argument("--load_weights", action="store_true")
-    parser.add_argument("--embedding_dim", type=int, default=256)
-    parser.add_argument("--hidden_dim", type=int, default=1024)
-    parser.add_argument("--epochs", type=int, default=3)
-    parser.add_argument("--batch_size", type=int, default=64)
-    parser.add_argument("--learning_rate", type=float, default=1e-3)
-    args = parser.parse_args()
-    return args
+  parser = argparse.ArgumentParser()
+  # parser.add_argument("--load_weights", action="store_true")
+  parser.add_argument("--embedding_dim", type=int, default=256)
+  parser.add_argument("--hidden_dim", type=int, default=1024)
+  parser.add_argument("--epochs", type=int, default=3)
+  parser.add_argument("--batch_size", type=int, default=64)
+  parser.add_argument("--learning_rate", type=float, default=1e-3)
+  args = parser.parse_args()
+  return args
 
 # def train(model, input):
 #   for input_example_batch, target_example_batch in input.take(1):
@@ -71,31 +83,14 @@ def main(args):
     VOCAB_SZE = vocab_sze
     
     # initialize model
-    lstm = LSTM(LEARNING_RATE)
-    model = lstm.create_model(EMBEDDING_DIM, HIDDEN_DIM, VOCAB_SZE)
+    model = LSTM(EMBEDDING_DIM, HIDDEN_DIM, VOCAB_SZE, LEARNING_RATE)
     
-    model.fit(
-      x=inputs,
-      epochs=EPOCHS,
-      steps_per_epoch=STEPS_PER_EPOCH,
-      # initial_epoch=INITIAL_EPOCH,
-      # callbacks=[
-      #   checkpoint_callback,
-      #   early_stopping_callback
-      # ]
-    )
-    
-    prog = tf.keras.utils.Progbar(EPOCHS)
     losses = []
-    for epoch in range(1, EPOCHS):
-        reward = train(env, model)
-        all_rewards.append(reward)
-        prog.add(1, values=[("reward", reward)])
-        # if i%20 == 0:
-        #     visualize_episode(env, model)
-    print(f'last 50 reward avg: {np.mean(all_rewards[-50:])}')
+    for epoch in range(1, EPOCHS+1):
+        total_loss = train(model, inputs)
+        losses.append(total_loss)
     # TODO: Visualize your rewards.
-    visualize_data(total_rewards=all_rewards)
+    visualize_data(losses)
 
 
 if __name__ == '__main__':
