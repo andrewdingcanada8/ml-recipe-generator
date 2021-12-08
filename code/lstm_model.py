@@ -7,8 +7,8 @@ from tensorflow.keras.initializers import GlorotNormal, RandomNormal
 
 class LSTM():
   def __init__(self, learning_rate):
-    self.optimizer = Adam(learning_rate=learning_rate)
-    self.model = Sequential()
+    self.optimizer = Adam(learning_rate=learning)
+    self.sequential_layer = Sequential()
   def loss(self, labels, logits):
     entropy = tf.keras.losses.sparse_categorical_crossentropy(
       y_true=labels,

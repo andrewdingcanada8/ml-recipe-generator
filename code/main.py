@@ -1,8 +1,11 @@
 import argparse
+import json
 import sys
 import os
+import pickle
+import tensorflow as tf
 from lstm_model import LSTM
-
+from preprocess import get_data
 
 # def test(model, test_inputs, test_labels):
 #     """
@@ -49,23 +52,30 @@ def parseArguments():
 #     preds = model(input_example_batch)
     
 def main(args):
-    # TODO: import the data
-
-    # TODO: initialize model
+    # initialize parameters
     EMBEDDING_DIM = args.embedding_dim
     HIDDEN_DIM = args.hidden_dim
-    VOCAB_SZE = len(vocab) #temp
     EPOCHS = args.epochs
     BATCH_SZE = args.batch_size
+    LEARNING_RATE = args.learning_rate
+    
+    # import data from preprocessing
+    inputs, tokenizer, vocab_sze = get_data(
+      'data/saved_data/data_padded.pickle', 
+      'data/saved_data/tokenizer.pickle',
+      BATCH_SZE,
+      )
+    
     # STEPS_PER_EPOCH = #total // batch size
     STEPS_PER_EPOCH = 1500 #temp
-    LEARNING_RATE = args.learning_rate
+    VOCAB_SZE = vocab_sze
+    
+    # initialize model
     lstm = LSTM(LEARNING_RATE)
     model = lstm.create_model(EMBEDDING_DIM, HIDDEN_DIM, VOCAB_SZE)
     
-    # TODO:
     model.fit(
-      x=dataset_train,
+      x=inputs,
       epochs=EPOCHS,
       steps_per_epoch=STEPS_PER_EPOCH,
       # initial_epoch=INITIAL_EPOCH,
@@ -78,7 +88,6 @@ def main(args):
     prog = tf.keras.utils.Progbar(EPOCHS)
     losses = []
     for epoch in range(1, EPOCHS):
-      
         reward = train(env, model)
         all_rewards.append(reward)
         prog.add(1, values=[("reward", reward)])
