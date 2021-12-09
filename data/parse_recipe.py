@@ -137,7 +137,7 @@ def parse_recipe(lines):
     try:
         current = _parse_mmf_header(it, current, recipe)
         current = _parse_title(it, current, recipe)
-        current = _parse_ingredients(it, current, recipe)
+        # current = _parse_ingredients(it, current, recipe)
         current = _parse_directions(it, current, recipe)
     except StopIteration:
         pass
@@ -286,7 +286,7 @@ def _parse_ingredients(it, current, recipe):
 # followed by a space
 # followed by 2 digits or spaces
 # followed by a space
-_ingredient_re = re.compile(r"^[\d]")
+_ingredient_re = re.compile(r"^[\d\./ ]{7} [A-Za-z ]{2} ")
 
 
 def _is_ingredient(line):
@@ -388,9 +388,14 @@ def _parse_directions(it, current, recipe):
     """Parse directions section by adding lines until we reach the footer."""
     directions = []
     try:
-        while not _is_mmf_footer(current):
-            directions.append(current)
-            current = next(it)
+        while True:
+            if not _is_mmf_footer(current):
+                directions.append(current)
+                current = next(it)
+            elif _is_empty(current):
+                pass
+            else:
+                break
     finally:
         # Add the directions even if we reach end of iterable
         # and StopIteration is raised.

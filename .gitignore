@@ -143,3 +143,5 @@ dmypy.json
 .vscode
 
 data/database_unclean/*
+*.mmf
+code/models
