@@ -25,6 +25,7 @@ class LSTM(tf.keras.Model):
     self.dense_layer = Dense(vocab_sze, activation='sigmoid')
   
   def call(self, inputs):
+    print(f'inputs shape: {inputs.shape}')
     embeddings = self.embedding_layer(inputs)
     output = self.lstm_layer(embeddings)
     return self.dense_layer(output)

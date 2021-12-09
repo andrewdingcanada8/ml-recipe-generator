@@ -9,6 +9,7 @@ def get_data(data_path, tokenizer_path, batch_sze, percent=1.0):
     
     # slice data into smaller set for debugging
     assert isinstance(percent, float) and percent <= 1.0
+    # data = data[len(data)//2+254*128:len(data)//2+300*128]
     data = data[:math.floor(len(data)*percent)]
     
     # create a dataset

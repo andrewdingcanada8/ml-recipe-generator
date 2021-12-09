@@ -6,6 +6,7 @@ import pickle
 import tensorflow as tf
 from lstm_model import LSTM
 from preprocess import get_data
+from generate import generate_text
 
 # def test(model, test_inputs, test_labels):
 #     """
@@ -91,7 +92,7 @@ def main(args):
     for epoch in range(1, EPOCHS+1):
       total_loss = train(model, inputs, epoch)
       losses.append(total_loss)
-    
+    generate_text(model, tokenizer, 'pot pie')
 
 
 if __name__ == '__main__':
