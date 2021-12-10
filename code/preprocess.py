@@ -18,7 +18,6 @@ def get_data(data_path, tokenizer_path, batch_sze, percent=1.0):
     with open(tokenizer_path, 'rb') as file:
         tokenizer = pickle.load(file)
 
-    print(tokenizer.sequences_to_texts([data[1]]))
     inputs = dataset.map(lambda input: (input[:-1], input[1:]))
     word_counts = json.loads(tokenizer.get_config()['word_index'])
     assert isinstance(word_counts, dict)

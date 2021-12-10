@@ -1,9 +1,7 @@
 import argparse
-import json
 import os
 import pickle
-from re import L
-import sys
+from re import split
 
 import tensorflow as tf
 from generate import generate_text
@@ -14,46 +12,23 @@ from generate import generate_text
 
 import numpy as np
 
-# def test(model, test_inputs, test_labels):
-#     """
-#     Runs through one epoch - all testing examples
-
-#     :param model: the trained model to use for prediction
-#     :param test_inputs: train inputs (all inputs for testing) of shape (num_inputs,)
-#     :param test_labels: train labels (all labels for testing) of shape (num_labels,)
-#     :returns: perplexity of the test set
-#     """
-#     total_batch_size = model.batch_size*model.window_size
-#     batch_loss = []
-
-#     margin = -(len(test_inputs)%(model.batch_size*model.window_size))
-#     test_inputs = test_inputs[:margin]
-#     test_labels = test_labels[:margin]
-#     input_size = len(test_inputs)
-#     num_batches = input_size//total_batch_size
-#     test_inputs = tf.reshape(test_inputs, (num_batches, model.batch_size, model.window_size))
-#     test_labels = tf.reshape(test_labels, (num_batches, model.batch_size, model.window_size))
-
-#     for index in range(0, len(test_inputs)):
-#         inputs_batch = test_inputs[index]
-#         labels_batch = test_labels[index]
-#         probs, state = model.call(inputs_batch, None)
-#         batch_loss.append(model.loss(probs, labels_batch))
-#     return tf.exp((np.array(batch_loss).mean()))
-
 
 def train(model, inputs, epoch):
+    """
+        train(model, inputs, epoch): trains the model based on the inputs
+        we use similar methods taught to us in class - using model.call and then model.loss, with GradientTape 
+    """
     prog = tf.keras.utils.Progbar(len(inputs))
     total_loss = 0
 
     i = 0
     for train_x, train_y in inputs:
-        # print(train_x.shape, train_y.shape)
 
         with tf.GradientTape() as tape:
             preds = model.call(train_x)
             loss = model.loss(train_y, preds)
 
+        # debug for if loss goes to NaN
         if (np.any(np.isnan(loss))):
             with open("error_file.pickle", 'wb+') as file:
                 pickle.dump(train_x, file)
@@ -71,6 +46,9 @@ def train(model, inputs, epoch):
 
 
 def parseArguments():
+    """
+        parseArguments(): parses command line arguments
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--embedding_dim", type=int, default=256)  # 256
     parser.add_argument("--hidden_dim", type=int, default=1024)  # 1024
@@ -79,6 +57,7 @@ def parseArguments():
     parser.add_argument("--learning_rate", type=float, default=1e-3)
     parser.add_argument("--percent", type=float, default=1.0)
 
+    # choose to train or test
     parser.add_argument('--test_only', dest='test_only', action='store_true')
     parser.add_argument('--train', dest='test_only',
                         action='store_false')
@@ -91,82 +70,93 @@ def parseArguments():
 
 
 def main(args):
+    """
+        main(args): main function
+        loads data, inits the model and trains or loads weights based on args
+        runs a repl if run under test mode which takes in starting input and returns a generated recipe
+    """
+
     # initialize parameters
-    EMBEDDING_DIM = args.embedding_dim
-    HIDDEN_DIM = args.hidden_dim
-    EPOCHS = args.epochs
-    BATCH_SZE = args.batch_size
-    LEARNING_RATE = args.learning_rate
-    PERCENT = args.percent
-    TEST_ONLY = args.test_only
+    embedding_dim = args.embedding_dim
+    hidden_dim = args.hidden_dim
+    epochs = args.epochs
+    batch_sze = args.batch_size
+    learning_rate = args.learning_rate
+    percent = args.percent
+    test_only = args.test_only
 
     # import data from preprocessing
     inputs, tokenizer, vocab_sze, recipe_len = get_data(
         'data/saved_data/data_padded.pickle',
         'data/saved_data/tokenizer.pickle',
-        BATCH_SZE,
-        PERCENT
+        batch_sze,
+        percent
     )
 
-    # print(np.sum(inputs))
-    # return
-
-    # STEPS_PER_EPOCH = #total // batch size
-    STEPS_PER_EPOCH = 1500  # temp
-
     # initialize model
-    model = Custom_LSTM(EMBEDDING_DIM, HIDDEN_DIM,
-                        vocab_sze, LEARNING_RATE, BATCH_SZE, recipe_len)
-    input_shape = (BATCH_SZE, recipe_len)
+    model = Custom_LSTM(embedding_dim, hidden_dim,
+                        vocab_sze, learning_rate, batch_sze, recipe_len)
+
+    input_shape = (batch_sze, recipe_len)
     model.build(input_shape)
     model.compute_output_shape(input_shape)
-    # print(model.get_weights())
 
     model_weight_path = 'code/models/lstm'
 
     # only train if we want to
-    if not TEST_ONLY:
+    if not test_only:
         if (os.path.exists(model_weight_path)):
             while (True):
-                print("model exists, are you sure you wanna train again (y/n)")
+                print("\nmodel alread exists, do you want to continue training? (y/n)")
                 i = input()
 
-                # train it
+                # load the weights and continue training the model
                 if (i == "y"):
-                    losses = []
-                    for epoch in range(1, EPOCHS+1):
-                        total_loss = train(model, inputs, epoch)
-                        losses.append(total_loss)
-
-                    model.save(model_weight_path, save_format="tf")
+                    model.load_weights(model_weight_path).expect_partial()
+                    break
+                else:
                     break
 
-                # dont train
-                elif (i == "n"):
-                    tf.keras.models.load_model(model_weight_path)
-                    break
-        else:
-            losses = []
-            for epoch in range(1, EPOCHS+1):
-                total_loss = train(model, inputs, epoch)
-                losses.append(total_loss)
+        # train the model
+        losses = []
+        for epoch in range(1, epochs+1):
+            total_loss = train(model, inputs, epoch)
+            losses.append(total_loss)
 
-            model.save(model_weight_path, save_format="tf")
+        # save the model after training
+        model.save_weights(model_weight_path,
+                           save_format="tf", overwrite=True)
 
     else:
-        tf.keras.models.load_model(model_weight_path)
+        # load the model weights
+        model.load_weights(model_weight_path).expect_partial()
 
-    new_model = Custom_LSTM(EMBEDDING_DIM, HIDDEN_DIM,
-                            vocab_sze, LEARNING_RATE, 1, recipe_len)
-    new_model.build((1, 2))
-    new_model.set_weights(model.get_weights())
+    print("\n\n\n\nwelcome to Salad Party recipe generator. we provide first class recipes developed by our friendly LSTM model")
 
-    combo = generate_text(new_model, tokenizer,
-                          "mushroom and strawberries", num_words=recipe_len)
-    print(combo)
+    # repl for testing
+    while True:
+        print("\n\nplease enter starting words (ingredients)\n")
+        i = input()
+
+        assert(i and len(i) > 0 and len(i.split(" ")) > 0)
+        if (i == "exit"):
+            return
+
+        split_i = i.split(" ")
+
+        # create new model and transfer weights for the prediction
+        new_model = Custom_LSTM(embedding_dim, hidden_dim,
+                                vocab_sze, learning_rate, 1, recipe_len)
+
+        new_model.build((1, len(split_i)))
+        new_model.set_weights(model.get_weights())
+
+        # generate the text and remove stop words
+        combo = generate_text(new_model, tokenizer, i, num_words=recipe_len)
+        print("\n\nyour special recipe is ready!\n")
+        print(combo.replace("<stop>", ""))
 
 
 if __name__ == '__main__':
-
     args = parseArguments()
     main(args)
